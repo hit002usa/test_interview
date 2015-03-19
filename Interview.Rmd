@@ -1,0 +1,93 @@
+---
+title: "EnerNOC Interview"
+author: "Qiong Wu"
+date: "March 18, 2015"
+output: word_document
+---
+```{r echo = FALSE}
+raw_data <- read.csv("Data2.csv")
+indx <- dim(raw_data)[1]
+names(raw_data) <- c("Date.Interval", "Reading")
+date_data <- sapply(as.character(raw_data$Date.Interval), strsplit, split = " ")
+dec_data <- data.frame(Date = vector("numeric", indx), Interval = vector("numeric", indx), Reading = vector("numeric", indx))
+dec_data$Reading <- raw_data$Reading
+for (i in 1:indx) {
+       dec_data$Date[i] = date_data[[i]][1]
+       dec_data$Interval[i] = date_data[[i]][2]
+}
+```
+
+- There are **missing values** from the Raw Meter Reading
+
+```{r echo = TRUE}
+missing_reading <- dec_data[is.na(dec_data$Reading), ]
+missing_reading
+```
+
+- This is a double check of number of **missing values** from Raw Meter Reading
+
+```{r echo = TRUE}
+missing_count <- sum(!complete.cases(dec_data))
+missing_count
+```
+
+- There are **error readings** from Raw Meter Reading
+
+```{r echo = TRUE}
+error_reading <- dec_data[(dec_data$Reading < 0)&(!is.na(dec_data$Reading)), ]
+error_reading
+```
+
+- This is a double check of number of **error readings** from Raw Meter Reading
+
+```{r echo = TRUE}
+error_count <- sum(dec_data$Reading < 0, na.rm = TRUE)
+error_count
+```
+
+```{r echo = FALSE}
+ave_data <- data.frame(day = vector("numeric", 31), ave.reading = vector("numeric", 31))
+for (i in 1:31) {
+png(paste0(i, "dec.png"))
+date_index <- paste0("12/", paste0(i, "/07"))  
+lab_dec_data <- dec_data[dec_data$Date == date_index, ]
+ave_data$day[i] <- date_index
+ave_data$ave.reading[i] <- mean(lab_dec_data$Reading[(lab_dec_data$Reading > 0) & !is.na(lab_dec_data$Reading)])     
+plot(1:length(lab_dec_data$Interval), lab_dec_data$Reading, type = "l", col = "red", xlab = "5-min Interval", ylab = "Meter Reading", main = paste("Dec.", i, sep = " "))
+dev.off()
+}
+```
+
+```{r echo = FALSE}
+ave_data$day <- strptime(ave_data$day, "%m/%d/%y")
+```
+
+- This is the table for **average reading for each day** basded on Raw Meter Reading
+
+```{r echo = TRUE}
+ave_data
+```
+
+- This is the point plot of average reading for each day of Dec. 2007
+
+```{r echo = FALSE}
+library(ggplot2)
+qplot(day, ave.reading, data = ave_data, geom = "point", col = "red", xlab = "Day", ylab = "Average Reading (kWh)", main = "EnerNOC Meter Reading of Dec. 2007")
+```
+
+```{r echo = FALSE}
+week_ave_data <- ave_data
+week_ave_data$day <- weekdays(week_ave_data$day, abbreviate = T)
+```
+
+- This is the table of average reading for each day according to **weekdays**.
+
+```{r echo = TRUE}
+week_ave_data
+```
+
+- This is the point plot of average reading for each day according to **weekdays** of Dec. 2007 
+
+```{r echo = FALSE}
+qplot(day, ave.reading, data = week_ave_data, geom = "point", col = "red", xlab = "Week", ylab = "Average Reading (kWh)", main = "EnerNOC Meter Reading of Dec. 2007")
+```
